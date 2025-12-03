@@ -1,20 +1,19 @@
 cmake_minimum_required(VERSION 3.10)
-cmake_minimum_required(VERSION 3.10)
 project(opencv_camera)
 
 find_package(OpenCV REQUIRED)
 
-include_directories(
-    ${OpenCV_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/src
-)
-
 add_executable(opencv_camera
-    src/main.cpp
-    src/CameraProvider.cpp
-    src/KeyProcessor.cpp
-    src/FrameProcessor.cpp
-    src/Display.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CameraProvider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/KeyProcessor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/FrameProcessor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Display.cpp
 )
 
-target_link_libraries(opencv_camera ${OpenCV_LIBS})
+target_include_directories(opencv_camera PRIVATE
+    ${OpenCV_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(opencv_camera PRIVATE ${OpenCV_LIBS})

@@ -1,3 +1,0 @@
-/home/ivan-moroz/Desktop/SRP_LAb/Special-Programming-Sections.-Lab-Work/Lab_3/build/CMakeFiles/opencv_camera.dir
-/home/ivan-moroz/Desktop/SRP_LAb/Special-Programming-Sections.-Lab-Work/Lab_3/build/CMakeFiles/edit_cache.dir
-/home/ivan-moroz/Desktop/SRP_LAb/Special-Programming-Sections.-Lab-Work/Lab_3/build/CMakeFiles/rebuild_cache.dir
