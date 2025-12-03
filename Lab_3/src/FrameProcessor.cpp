@@ -5,6 +5,35 @@ FrameProcessor::FrameProcessor()
 
 void FrameProcessor::setMode(KeyProcessor::Mode m) { mode = m; }
 void FrameProcessor::setOverlay(const cv::Mat &img) { overlay = img.clone(); }
+static cv::Mat roll(const cv::Mat& src, int shift_row, int shift_col)
+{
+    cv::Mat dst = src.clone();
+
+    int rows = src.rows;
+    int cols = src.cols;
+
+    // нормализуем сдвиги
+    shift_row = ((shift_row % rows) + rows) % rows;
+    shift_col = ((shift_col % cols) + cols) % cols;
+
+    // Сдвиг по строкам
+    if (shift_row != 0) {
+        cv::Mat tmp;
+        cv::vconcat(src.rowRange(rows - shift_row, rows),
+                    src.rowRange(0, rows - shift_row), tmp);
+        tmp.copyTo(dst);
+    }
+
+    // Сдвиг по колонкам
+    if (shift_col != 0) {
+        cv::Mat tmp;
+        cv::hconcat(dst.colRange(cols - shift_col, cols),
+                    dst.colRange(0, cols - shift_col), tmp);
+        tmp.copyTo(dst);
+    }
+
+    return dst;
+}
 
 cv::Mat FrameProcessor::process(const cv::Mat &frame) {
     cv::Mat dst;
@@ -38,6 +67,63 @@ cv::Mat FrameProcessor::process(const cv::Mat &frame) {
             cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
             break;
         }
+	case KeyProcessor::Mode::GLITCH:
+	{
+    		cv::Mat gl = frame.clone();
+
+    		
+    		std::vector<cv::Mat> ch;
+    		cv::split(gl, ch);
+
+    		int shift = 15;  
+
+    		
+    		ch[2] = roll(ch[2], 0, shift);
+
+   		
+    		ch[1] = roll(ch[1], 0, -shift);
+
+    		
+    		cv::merge(ch, gl);
+
+
+    
+    		for (int y = 0; y < gl.rows; y += 8)   
+    		{
+        		int height = 8;                    
+        		if (y + height > gl.rows)
+            			height = gl.rows - y;
+
+        			cv::Mat roi = gl.rowRange(y, y + height);
+
+        			int dx = (rand() % 25) - 12;       
+
+        			roi = roll(roi, 0, dx);
+    		}
+
+         return gl;
+    	}
+	case KeyProcessor::Mode::PIP:
+	{
+    		cv::Mat pip = frame.clone();
+
+    		
+    		cv::Mat small;
+    		cv::resize(frame, small, cv::Size(), 0.25, 0.25);
+
+    		
+    		int x = pip.cols - small.cols - 10;
+    		int y = pip.rows - small.rows - 10;
+
+    		
+    		cv::Mat roi = pip(cv::Rect(x, y, small.cols, small.rows));
+
+    		small.copyTo(roi);
+
+    		return pip;
+	}
+
+
         default:
             dst = frame.clone();
             break;
