@@ -14,9 +14,13 @@ bool KeyProcessor::processKey(int key) {
         case '6': mode = Mode::BINARY; break;
         case '7': mode = Mode::GLITCH; break;
         case '8': mode = Mode::PIP; break;
-        case '+': increaseZoom(); break;
-        case '-': decreaseZoom(); break;
+        case '=': case '+': increaseZoom(); break;
+        case '_': case '-': decreaseZoom(); break;
         default: break;
     }
     return true;
+}
+
+float KeyProcessor::getZoom() const {
+    return zoom;
 }

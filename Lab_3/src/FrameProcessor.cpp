@@ -1,10 +1,13 @@
 #include "FrameProcessor.hpp"
+#include <cstdlib>
 
 FrameProcessor::FrameProcessor()
-    : mode(KeyProcessor::Mode::ORIGINAL), zoomFactor(1.0), crossCenter(0,0) {}
+    : mode(KeyProcessor::Mode::ORIGINAL),
+      zoomFactor(1.0),
+      crossCenter(0, 0)
+{}
 
-void FrameProcessor::setMode(KeyProcessor::Mode m) { mode = m; }
-void FrameProcessor::setOverlay(const cv::Mat &img) { overlay = img.clone(); }
+// --- Roll-функция для GLITCH ---
 static cv::Mat roll(const cv::Mat& src, int shift_row, int shift_col)
 {
     cv::Mat dst = src.clone();
@@ -12,12 +15,16 @@ static cv::Mat roll(const cv::Mat& src, int shift_row, int shift_col)
     int rows = src.rows;
     int cols = src.cols;
 
+    if (rows == 0 || cols == 0)
+        return dst;
+
     // нормализуем сдвиги
     shift_row = ((shift_row % rows) + rows) % rows;
     shift_col = ((shift_col % cols) + cols) % cols;
 
     // Сдвиг по строкам
-    if (shift_row != 0) {
+    if (shift_row != 0)
+    {
         cv::Mat tmp;
         cv::vconcat(src.rowRange(rows - shift_row, rows),
                     src.rowRange(0, rows - shift_row), tmp);
@@ -25,7 +32,8 @@ static cv::Mat roll(const cv::Mat& src, int shift_row, int shift_col)
     }
 
     // Сдвиг по колонкам
-    if (shift_col != 0) {
+    if (shift_col != 0)
+    {
         cv::Mat tmp;
         cv::hconcat(dst.colRange(cols - shift_col, cols),
                     dst.colRange(0, cols - shift_col), tmp);
@@ -35,107 +43,144 @@ static cv::Mat roll(const cv::Mat& src, int shift_row, int shift_col)
     return dst;
 }
 
-cv::Mat FrameProcessor::process(const cv::Mat &frame) {
+void FrameProcessor::setMode(KeyProcessor::Mode m) {
+    mode = m;
+}
+
+void FrameProcessor::setOverlay(const cv::Mat &img) {
+    overlay = img.clone();
+}
+
+void FrameProcessor::setZoom(double z) {
+    zoomFactor = z;
+}
+
+
+
+// --- Основная обработка кадра ---
+cv::Mat FrameProcessor::process(const cv::Mat &frame)
+{
+    cv::Mat src = frame;
+
+    // ========= ZOOM ============
+    if (zoomFactor != 1.0)
+    {
+        cv::Mat resized;
+        cv::resize(frame, resized, cv::Size(), zoomFactor, zoomFactor);
+        src = resized;
+    }
+
     cv::Mat dst;
 
-    switch(mode) {
+    switch (mode)
+    {
         case KeyProcessor::Mode::INVERT:
-            cv::bitwise_not(frame, dst);
+            cv::bitwise_not(src, dst);
             break;
+
         case KeyProcessor::Mode::GAUSSIAN:
-            cv::GaussianBlur(frame, dst, cv::Size(7,7), 1.5);
+            cv::GaussianBlur(src, dst, cv::Size(7, 7), 1.5);
             break;
+
         case KeyProcessor::Mode::CANNY:
-            cv::Canny(frame, dst, 50, 150);
+            cv::Canny(src, dst, 50, 150);
             cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
             break;
-        case KeyProcessor::Mode::SOBEL: {
+
+        case KeyProcessor::Mode::SOBEL:
+        {
             cv::Mat gray, sx, sy, mag;
-            cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+            cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
             cv::Sobel(gray, sx, CV_32F, 1, 0);
             cv::Sobel(gray, sy, CV_32F, 0, 1);
             cv::magnitude(sx, sy, mag);
+
             double minv, maxv;
             cv::minMaxLoc(mag, &minv, &maxv);
-            mag.convertTo(mag, CV_8U, 255.0/(maxv+1e-9));
+            mag.convertTo(mag, CV_8U, 255.0/(maxv + 1e-9));
+
             cv::cvtColor(mag, dst, cv::COLOR_GRAY2BGR);
             break;
         }
-        case KeyProcessor::Mode::BINARY: {
-            cv::cvtColor(frame, dst, cv::COLOR_BGR2GRAY);
+
+        case KeyProcessor::Mode::BINARY:
+        {
+            cv::cvtColor(src, dst, cv::COLOR_BGR2GRAY);
             cv::threshold(dst, dst, 128, 255, cv::THRESH_BINARY);
             cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
             break;
         }
-	case KeyProcessor::Mode::GLITCH:
-	{
-    		cv::Mat gl = frame.clone();
 
-    		
-    		std::vector<cv::Mat> ch;
-    		cv::split(gl, ch);
+        // ========= GLITCH EFFECT ============
+        case KeyProcessor::Mode::GLITCH:
+        {
+            cv::Mat gl = src.clone();
 
-    		int shift = 15;  
+            // Разделяем на каналы
+            std::vector<cv::Mat> ch;
+            cv::split(gl, ch);
 
-    		
-    		ch[2] = roll(ch[2], 0, shift);
+            int shift = 15;
 
-   		
-    		ch[1] = roll(ch[1], 0, -shift);
+            // R канал вправо
+            ch[2] = roll(ch[2], 0, shift);
 
-    		
-    		cv::merge(ch, gl);
+            // G канал влево
+            ch[1] = roll(ch[1], 0, -shift);
 
+            cv::merge(ch, gl);
 
-    
-    		for (int y = 0; y < gl.rows; y += 8)   
-    		{
-        		int height = 8;                    
-        		if (y + height > gl.rows)
-            			height = gl.rows - y;
+            // Горизонтальные строки со сдвигом
+            for (int y = 0; y < gl.rows; y += 8)
+            {
+                int height = std::min(8, gl.rows - y);
+                cv::Mat roi = gl.rowRange(y, y + height);
 
-        			cv::Mat roi = gl.rowRange(y, y + height);
+                int dx = (rand() % 25) - 12;  // [-12; +12]
 
-        			int dx = (rand() % 25) - 12;       
+                cv::Mat shifted = roll(roi, 0, dx);
+                shifted.copyTo(roi);
+            }
 
-        			roi = roll(roi, 0, dx);
-    		}
+            return gl;
+        }
 
-         return gl;
-    	}
-	case KeyProcessor::Mode::PIP:
-	{
-    		cv::Mat pip = frame.clone();
+        // ========== Picture-in-picture ==========
+        case KeyProcessor::Mode::PIP:
+        {
+            cv::Mat pip = src.clone();
 
-    		
-    		cv::Mat small;
-    		cv::resize(frame, small, cv::Size(), 0.25, 0.25);
+            if (!pip.empty())
+            {
+                cv::Mat small;
+                cv::resize(src, small, cv::Size(), 0.25, 0.25);
 
-    		
-    		int x = pip.cols - small.cols - 10;
-    		int y = pip.rows - small.rows - 10;
+                int x = pip.cols - small.cols - 10;
+                int y = pip.rows - small.rows - 10;
 
-    		
-    		cv::Mat roi = pip(cv::Rect(x, y, small.cols, small.rows));
+                if (x >= 0 && y >= 0)
+                {
+                    cv::Mat roi = pip(cv::Rect(x, y, small.cols, small.rows));
+                    small.copyTo(roi);
+                }
+            }
 
-    		small.copyTo(roi);
-
-    		return pip;
-	}
-
+            return pip;
+        }
 
         default:
-            dst = frame.clone();
+            dst = src.clone();
             break;
     }
 
-    // overlay
-    if (!overlay.empty()) cv::addWeighted(dst, 1.0, overlay, 0.5, 0, dst);
+    // ====== Overlay ======
+    if (!overlay.empty())
+        cv::addWeighted(dst, 1.0, overlay, 0.5, 0, dst);
 
     return dst;
 }
 
+// Заглушки (если рисование не нужно)
 void FrameProcessor::onMouse(int, int, int, int) {}
 void FrameProcessor::moveCross(int, int) {}
 void FrameProcessor::clearDrawings() {}
-
