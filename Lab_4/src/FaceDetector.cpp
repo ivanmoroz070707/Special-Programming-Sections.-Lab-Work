@@ -27,7 +27,8 @@ std::vector<cv::Rect> FaceDetector::getLatestDetections() {
 }
 
 void FaceDetector::workerLoop() {
-    while (!shouldExit) {
+  cv::setNumThreads(1); 
+  while (!shouldExit) {
         cv::Mat frame;
         
         // Очікуємо на новий кадр під м'ютексом
