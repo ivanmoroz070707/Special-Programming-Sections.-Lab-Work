@@ -4,7 +4,7 @@
 FrameProcessor::FrameProcessor()
     : mode(KeyProcessor::Mode::ORIGINAL),
       zoomFactor(1.0),
-      crossCenter(0, 0),detector("deploy.prototxt", "res10_300x300_ssd_iter_140000.caffemodel")
+      crossCenter(0, 0),detector("resources/deploy.prototxt", "resources/res10_300x300_ssd_iter_140000.caffemodel")
 
 {}
 
@@ -172,7 +172,7 @@ cv::Mat FrameProcessor::process(const cv::Mat &frame)
 case KeyProcessor::Mode::FACE: {
             dst = src.clone();
             // Відправляємо кадр в детектор (не блокує UI!)
-            detector.processFrameAsync(dst);
+            detector.processFrameAsync(src);
             std::cout<<"dst "<<std::flush;
             // Забираємо результати (миттєво)
             std::vector<cv::Rect> faces = detector.getLatestDetections();

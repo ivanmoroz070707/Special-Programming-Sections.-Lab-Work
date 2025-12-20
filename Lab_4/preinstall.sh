@@ -16,9 +16,9 @@ echo "Preinstall finished. You can run ./build.sh"
 echo "Downloading DNN model files..."
 
 # Файл архітектури (Prototxt)
-wget -N https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt
+wget -N https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt -P resources/
 
 # Файл ваг (Caffemodel)
-wget -N https://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel
+wget -N https://raw.githubusercontent.com/opencv/opencv_3rdparty/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel -P resources/
 
 echo "Preinstall finished. DNN models downloaded. You can run ./build.sh"

@@ -26,3 +26,4 @@ target_link_libraries(opencv_camera PRIVATE
     ${OpenCV_LIBS}
     Threads::Threads
 )
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

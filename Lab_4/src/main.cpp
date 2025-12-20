@@ -3,7 +3,7 @@
 #include "KeyProcessor.hpp"
 #include "FrameProcessor.hpp"
 #include "Display.hpp"
-
+#include "FaceDetector.hpp"
 int main() {
     CameraProvider cam(0);
     if (!cam.isOpened()) {
