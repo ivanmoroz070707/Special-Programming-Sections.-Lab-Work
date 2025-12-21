@@ -70,7 +70,7 @@ void FaceDetector::workerLoop() {
                     lastResults = foundFaces;
                 }
                 
-                std::cout << " DNN " << std::flush;
+                std::cout << "found x faces " << std::endl;
             } catch (const cv::Exception& e) {
                 // Захист від критичних збоїв при обробці
             }

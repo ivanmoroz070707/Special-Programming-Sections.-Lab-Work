@@ -173,7 +173,7 @@ case KeyProcessor::Mode::FACE: {
             dst = src.clone();
             // Відправляємо кадр в детектор (не блокує UI!)
             detector.processFrameAsync(src);
-            std::cout<<"dst "<<std::flush;
+           // std::cout<<"dst "<<std::flush;
             // Забираємо результати (миттєво)
             std::vector<cv::Rect> faces = detector.getLatestDetections();
             
